@@ -14,25 +14,18 @@ def decode_text(data):
 
 
 class PVD:
-    def __init__(self, text_file, img_file, result_file='res.bmp'):
-        self.__text_file = text_file
-        self.__img_file = img_file
-        self.__result_file = result_file
-        self.__data = self.__encode_text()
-
-    def __encode_text(self):
-        with open(self.__text_file, mode='r', encoding='utf8') as f:
-            res = ''
-            text = f.read()
-            for i in text:
-                bin_symb = bin(ord(i))[2:]
-                res += '0' * (8 - len(bin_symb)) + bin_symb
+    def __encode_text(self, data):
+        res = ''
+        for i in data:
+            bin_symb = bin(ord(i))[2:]
+            res += '0' * (8 - len(bin_symb)) + bin_symb
         return res
 
-    def encode_to_img(self):
-        with open(self.__img_file, mode='rb') as img, open(self.__result_file, mode='wb') as res:
+    def encode_to_img(self, data, img_file, result_file='res.bmp'):
+        data = self.__encode_text(data)
+        with open(img_file, mode='rb') as img, open(result_file, mode='wb') as res:
             res.write(img.read(54))
-            for i in self.__data:
+            for i in data:
                 c1, c2 = img.read(1), img.read(1)
                 if i == '1':
                     c1 = int.from_bytes(c1, sys.byteorder)
@@ -47,11 +40,11 @@ class PVD:
                     res.write(c1)
                     res.write(c2)
             res.write(img.read())
+            print(f'Encoding done, check {result_file}')
 
-    def decode_img(self, orig_file):
-        with open(self.__img_file, mode='rb') as img, open(
-                self.__result_file, mode='w', encoding='utf8') as res_file, open(
-            orig_file, mode='rb') as orig:
+    def decode_img(self, orig_file, img_file):
+        with open(img_file, mode='rb') as img, open(
+                orig_file, mode='rb') as orig:
             img.seek(54)
             orig.seek(54)
             data = img.read()
@@ -64,10 +57,8 @@ class PVD:
                 if abs(abs(c1 - c2) - abs(o1 - o2)) == 1:
                     res += '1'
             res = decode_text(res)
-            res_file.write(res)
+            print(res)
 
 
-text = PVD('text.txt', 'test_img.bmp')
-text.encode_to_img()
-decode = PVD(img_file='res.bmp', result_file='output.txt', text_file='text.txt')
-decode.decode_img('test_img.bmp')
+PVD().encode_to_img(input('Input text:\n'), img_file=input('Input filename:\n'))
+PVD().decode_img(input('Input orig filename:\n'), input('Input filename with message:\n'))
